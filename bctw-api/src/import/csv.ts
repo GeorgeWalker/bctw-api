@@ -23,7 +23,7 @@ import {
 import { cleanupUploadsDir, mapCsvHeader, removeEmptyProps, rowToCsv } from './import_helpers';
 import { upsertPointTelemetry } from '../apis/map_api';
 import { pg_link_collar_fn } from '../apis/attachment_api';
-import { ChangeCollarData } from '../types/attachment';
+import { IAttachDeviceProps } from '../types/attachment';
 
 /**
  * parses the csv file
@@ -156,7 +156,7 @@ const handleCollarCritterLink = async (
           });
           return;
         }
-        const body: ChangeCollarData = {
+        const body: IAttachDeviceProps = {
           collar_id: matchingCollar.collar_id,
           critter_id: savedCritter.critter_id,
           // an attachment begins at the animal capture date

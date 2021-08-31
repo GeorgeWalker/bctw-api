@@ -5,7 +5,7 @@ import {
   query,
 } from '../database/query';
 import { getUserIdentifier } from '../database/requests';
-import { ChangeCritterCollarProps } from '../types/attachment';
+import { IAttachDeviceProps, IRemoveDeviceProps, IChangeDataLifeProps } from '../types/attachment';
 
 /**
  * file contains API endpoints that handle the animal/device attachment
@@ -16,37 +16,68 @@ const pg_unlink_collar_fn = 'unlink_collar_to_animal';
 const pg_link_collar_fn = 'link_collar_to_animal';
 
 /**
- * handles critter collar assignment/unassignment
+ * handles critter collar assignment
  * @returns result of assignment row from the collar_animal_assignment table
  */
-const assignOrUnassignCritterCollar = async function (
+/*
+*/
+const attachDevice = async function (
   req: Request,
   res: Response
 ): Promise<Response> {
-  const body: ChangeCritterCollarProps = req.body;
-  const { collar_id, critter_id, valid_from, valid_to } = body.data;
+  const body: IAttachDeviceProps = req.body;
+  const { collar_id, critter_id, valid_from, valid_to } = body;
 
   if (!collar_id || !critter_id) {
     return res.status(500).send('collar_id & animal_id must be supplied');
   }
-
-  const db_fn_name = body.isLink ? pg_link_collar_fn : pg_unlink_collar_fn;
-  const params = [getUserIdentifier(req), collar_id, critter_id];
-  const errMsg = `failed to ${
-    body.isLink ? 'attach' : 'remove'
-  } device to critter ${critter_id}`;
-
-  const functionParams = body.isLink
-    ? [...params, valid_from, valid_to]
-    : [...params, valid_to];
-  const sql = constructFunctionQuery(db_fn_name, functionParams);
-  const { result, error, isError } = await query(sql, errMsg, true);
+  const sql = constructFunctionQuery(pg_link_collar_fn, [getUserIdentifier(req), collar_id, critter_id, valid_from, valid_to]);
+  const { result, error, isError } = await query(sql, 'unable to attach collar', true);
 
   if (isError) {
     return res.status(500).send(error.message);
   }
-  return res.send(getRowResults(result, db_fn_name));
-};
+  return res.send(getRowResults(result, pg_link_collar_fn));
+}
+
+/**
+ * 
+ * @returns 
+ */
+const unattachDevice = async function (
+  req: Request,
+  res: Response
+) : Promise<Response> {
+
+  const body: IRemoveDeviceProps = req.body;
+  const { assignment_id, valid_from, valid_to } = body;
+  const sql = constructFunctionQuery(pg_unlink_collar_fn, [getUserIdentifier(req), assignment_id, valid_from, valid_to]);
+  const { result, error, isError } = await query(sql, 'unable to remove collar', true);
+
+  if (isError) {
+    return res.status(500).send(error.message);
+  }
+  return res.send(getRowResults(result, pg_unlink_collar_fn));
+}
+
+/**
+ * 
+ * @returns 
+ */
+const updateDataLife = async function (
+  req: Request,
+  res: Response
+) : Promise<Response> {
+  const body: IChangeDataLifeProps = req.body;
+  const { assignment_id, data_life_start, data_life_end } = body;
+  const sql = constructFunctionQuery('todo:', [getUserIdentifier(req), assignment_id, data_life_start, data_life_end]);
+  const { result, error, isError } = await query(sql, 'unable to change data life', true);
+
+  if (isError) {
+    return res.status(500).send(error.message);
+  }
+  return res.send(getRowResults(result, 'todo:'));
+}
 
 /**
  * @param req.params.animal_id the critter_id of the history to retrieve
@@ -61,13 +92,10 @@ const getCollarAssignmentHistory = async function (
   if (!critterId) {
     return res
       .status(500)
-      .send('must supply animal id to retrieve collar history');
+      .send('must supply critter_id to retrieve collar history');
   }
   const sql = constructFunctionQuery(pg_get_history, [id, critterId]);
-  const { result, error, isError } = await query(
-    sql,
-    `failed to get collar history`
-  );
+  const { result, error, isError } = await query(sql);
   if (isError) {
     return res.status(500).send(error.message);
   }
@@ -77,5 +105,7 @@ const getCollarAssignmentHistory = async function (
 export {
   pg_link_collar_fn,
   getCollarAssignmentHistory,
-  assignOrUnassignCritterCollar,
+  attachDevice,
+  unattachDevice,
+  updateDataLife,
 };
