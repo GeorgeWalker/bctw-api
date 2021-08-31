@@ -14,6 +14,7 @@ import { IAttachDeviceProps, IRemoveDeviceProps, IChangeDataLifeProps } from '..
 const pg_get_history = 'get_animal_collar_assignment_history';
 const pg_unlink_collar_fn = 'unlink_collar_to_animal';
 const pg_link_collar_fn = 'link_collar_to_animal';
+const pg_update_data_life_fn = 'update_attachment_data_life';
 
 /**
  * handles critter collar assignment
@@ -26,13 +27,13 @@ const attachDevice = async function (
   res: Response
 ): Promise<Response> {
   const body: IAttachDeviceProps = req.body;
-  const { collar_id, critter_id, valid_from, valid_to } = body;
+  const { collar_id, critter_id, actual_start, data_life_start, actual_end, data_life_end} = body;
 
   if (!collar_id || !critter_id) {
     return res.status(500).send('collar_id & animal_id must be supplied');
   }
-  const sql = constructFunctionQuery(pg_link_collar_fn, [getUserIdentifier(req), collar_id, critter_id, valid_from, valid_to]);
-  const { result, error, isError } = await query(sql, 'unable to attach collar', true);
+  const sql = constructFunctionQuery(pg_link_collar_fn, [getUserIdentifier(req), collar_id, critter_id, actual_start, data_life_start, actual_end, data_life_end]);
+  const { result, error, isError } = await query(sql, '', true);
 
   if (isError) {
     return res.status(500).send(error.message);
@@ -50,8 +51,8 @@ const unattachDevice = async function (
 ) : Promise<Response> {
 
   const body: IRemoveDeviceProps = req.body;
-  const { assignment_id, valid_from, valid_to } = body;
-  const sql = constructFunctionQuery(pg_unlink_collar_fn, [getUserIdentifier(req), assignment_id, valid_from, valid_to]);
+  const { assignment_id, data_life_end, actual_end } = body;
+  const sql = constructFunctionQuery(pg_unlink_collar_fn, [getUserIdentifier(req), assignment_id, actual_end, data_life_end]);
   const { result, error, isError } = await query(sql, 'unable to remove collar', true);
 
   if (isError) {
@@ -61,6 +62,7 @@ const unattachDevice = async function (
 }
 
 /**
+ * todo: can data life end be modified if the device is still attached?
  * 
  * @returns 
  */
@@ -70,13 +72,13 @@ const updateDataLife = async function (
 ) : Promise<Response> {
   const body: IChangeDataLifeProps = req.body;
   const { assignment_id, data_life_start, data_life_end } = body;
-  const sql = constructFunctionQuery('todo:', [getUserIdentifier(req), assignment_id, data_life_start, data_life_end]);
+  const sql = constructFunctionQuery(pg_update_data_life_fn, [getUserIdentifier(req), assignment_id, data_life_start, data_life_end]);
   const { result, error, isError } = await query(sql, 'unable to change data life', true);
 
   if (isError) {
     return res.status(500).send(error.message);
   }
-  return res.send(getRowResults(result, 'todo:'));
+  return res.send(getRowResults(result, pg_update_data_life_fn));
 }
 
 /**

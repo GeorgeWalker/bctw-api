@@ -69,6 +69,7 @@ const app = express()
   .get('/get-assignment-history/:animal_id', api.getCollarAssignmentHistory)
   .get('/get-collar-history/:collar_id', api.getCollarChangeHistory)
   .post('/upsert-collar', api.upsertCollar)
+  // device attachment status
   .post('/attach-device', api.attachDevice)
   .post('/unattach-device', api.unattachDevice)
   .post('/update-data-life', api.updateDataLife)
