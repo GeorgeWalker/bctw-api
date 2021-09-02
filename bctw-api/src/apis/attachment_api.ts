@@ -27,12 +27,12 @@ const attachDevice = async function (
   res: Response
 ): Promise<Response> {
   const body: IAttachDeviceProps = req.body;
-  const { collar_id, critter_id, actual_start, data_life_start, actual_end, data_life_end} = body;
+  const { collar_id, critter_id, attachment_start, data_life_start, attachment_end, data_life_end} = body;
 
   if (!collar_id || !critter_id) {
     return res.status(500).send('collar_id & animal_id must be supplied');
   }
-  const sql = constructFunctionQuery(pg_link_collar_fn, [getUserIdentifier(req), collar_id, critter_id, actual_start, data_life_start, actual_end, data_life_end]);
+  const sql = constructFunctionQuery(pg_link_collar_fn, [getUserIdentifier(req), collar_id, critter_id, attachment_start, data_life_start, attachment_end, data_life_end]);
   const { result, error, isError } = await query(sql, '', true);
 
   if (isError) {
@@ -51,8 +51,8 @@ const unattachDevice = async function (
 ) : Promise<Response> {
 
   const body: IRemoveDeviceProps = req.body;
-  const { assignment_id, data_life_end, actual_end } = body;
-  const sql = constructFunctionQuery(pg_unlink_collar_fn, [getUserIdentifier(req), assignment_id, actual_end, data_life_end]);
+  const { assignment_id, data_life_end, attachment_end } = body;
+  const sql = constructFunctionQuery(pg_unlink_collar_fn, [getUserIdentifier(req), assignment_id, attachment_end, data_life_end]);
   const { result, error, isError } = await query(sql, 'unable to remove collar', true);
 
   if (isError) {
@@ -89,14 +89,13 @@ const getCollarAssignmentHistory = async function (
   req: Request,
   res: Response
 ): Promise<Response> {
-  const id = getUserIdentifier(req);
   const critterId = req.params.animal_id as string;
   if (!critterId) {
     return res
       .status(500)
       .send('must supply critter_id to retrieve collar history');
   }
-  const sql = constructFunctionQuery(pg_get_history, [id, critterId]);
+  const sql = constructFunctionQuery(pg_get_history, [getUserIdentifier(req), critterId]);
   const { result, error, isError } = await query(sql);
   if (isError) {
     return res.status(500).send(error.message);

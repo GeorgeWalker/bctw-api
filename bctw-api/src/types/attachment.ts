@@ -4,14 +4,14 @@
  */
 
 interface IDataLifeEndProps {
-  actual_end?: Date | string;
+  attachment_end?: Date | string;
   data_life_end?: Date | string;
 }
 
 interface IAttachDeviceProps extends IDataLifeEndProps {
   collar_id: string;
   critter_id: string;
-  actual_start: Date | string;
+  attachment_start: Date | string;
   data_life_start: Date | string;
 }
 
