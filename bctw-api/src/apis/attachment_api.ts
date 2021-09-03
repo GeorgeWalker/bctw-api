@@ -8,7 +8,7 @@ import { getUserIdentifier } from '../database/requests';
 import { IAttachDeviceProps, IRemoveDeviceProps, IChangeDataLifeProps } from '../types/attachment';
 
 /**
- * file contains API endpoints that handle the animal/device attachment
+ * contains API endpoints that handle the animal/device attachment
  */
 
 const pg_get_history = 'get_animal_collar_assignment_history';
@@ -20,8 +20,6 @@ const pg_update_data_life_fn = 'update_attachment_data_life';
  * handles critter collar assignment
  * @returns result of assignment row from the collar_animal_assignment table
  */
-/*
-*/
 const attachDevice = async function (
   req: Request,
   res: Response
@@ -38,12 +36,11 @@ const attachDevice = async function (
   if (isError) {
     return res.status(500).send(error.message);
   }
-  return res.send(getRowResults(result, pg_link_collar_fn));
+  return res.send(getRowResults(result, pg_link_collar_fn)[0]);
 }
 
 /**
- * 
- * @returns 
+ * removes a device from an animal 
  */
 const unattachDevice = async function (
   req: Request,
@@ -51,20 +48,23 @@ const unattachDevice = async function (
 ) : Promise<Response> {
 
   const body: IRemoveDeviceProps = req.body;
-  const { assignment_id, data_life_end, attachment_end } = body;
+  const { assignment_id, data_life_end, attachment_end} = body;
   const sql = constructFunctionQuery(pg_unlink_collar_fn, [getUserIdentifier(req), assignment_id, attachment_end, data_life_end]);
   const { result, error, isError } = await query(sql, 'unable to remove collar', true);
 
   if (isError) {
     return res.status(500).send(error.message);
   }
-  return res.send(getRowResults(result, pg_unlink_collar_fn));
+  return res.send(getRowResults(result, pg_unlink_collar_fn)[0]);
 }
 
 /**
- * todo: can data life end be modified if the device is still attached?
- * 
- * @returns 
+ * updates a device attachment's data life - the inner bounds of what a user consider's valid data 
+ * the attachment_start / end dates cannot be changed.
+ * start of data life must be after the attachment start, and data life end must be before attachment_end.
+ * data life end cannot be changed while the device is still attached. 
+ * data life start and end can only be modified once by a non-admin user.
+ * @returns collar_animal_assignment row
  */
 const updateDataLife = async function (
   req: Request,
@@ -73,12 +73,14 @@ const updateDataLife = async function (
   const body: IChangeDataLifeProps = req.body;
   const { assignment_id, data_life_start, data_life_end } = body;
   const sql = constructFunctionQuery(pg_update_data_life_fn, [getUserIdentifier(req), assignment_id, data_life_start, data_life_end]);
+  // console.log(sql);
+  // return res.send(null);
   const { result, error, isError } = await query(sql, 'unable to change data life', true);
 
   if (isError) {
     return res.status(500).send(error.message);
   }
-  return res.send(getRowResults(result, pg_update_data_life_fn));
+  return res.send(getRowResults(result, pg_update_data_life_fn)[0]);
 }
 
 /**
